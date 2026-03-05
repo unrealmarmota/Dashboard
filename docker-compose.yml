@@ -1,0 +1,18 @@
+services:
+  ha-dashboard:
+    build: .
+    container_name: ha-dashboard
+    restart: unless-stopped
+    ports:
+      - "3080:80"
+    # Falls Uptime Kuma im gleichen Docker-Netz läuft,
+    # kann man hier ein shared network einbinden:
+    # networks:
+    #   - monitoring
+    extra_hosts:
+      # Host-Netzwerk für HA WebSocket + Uptime Kuma Proxy
+      - "host.docker.internal:host-gateway"
+
+# networks:
+#   monitoring:
+#     external: true
