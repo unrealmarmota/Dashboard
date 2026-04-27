@@ -91,3 +91,161 @@ input[type=range]::-moz-range-thumb {
   .familie-tab .snap-x { scrollbar-width: none; }
   .familie-tab .snap-x::-webkit-scrollbar { display: none; }
 }
+
+/* ── RecipeSwipeCard ── */
+.rsc-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.rsc-modal {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  width: 100%; max-width: 420px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  animation: modalIn 0.22s ease-out;
+}
+.rsc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.rsc-title { font-size: 15px; font-weight: 600; color: var(--color-text-primary); }
+.rsc-close {
+  background: var(--color-dim); border: none; color: var(--color-text-muted);
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.rsc-close:hover { background: var(--color-border); color: var(--color-text-primary); }
+
+/* Card (animated) */
+.rsc-card {
+  display: flex; flex-direction: column;
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.28s;
+}
+.rsc-out-left  { transform: translateX(-110%); opacity: 0; }
+.rsc-out-right { transform: translateX(110%);  opacity: 0; }
+
+/* Image */
+.rsc-img {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+}
+.rsc-noimg {
+  width: 100%; aspect-ratio: 16/9;
+  background: var(--color-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 56px;
+}
+
+/* Info block */
+.rsc-info { padding: 14px 16px 6px; }
+.rsc-name {
+  font-size: 18px; font-weight: 700; color: var(--color-text-primary);
+  line-height: 1.25; margin-bottom: 8px;
+}
+.rsc-keywords { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.rsc-kw {
+  font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px;
+  background: var(--color-teal-dim); color: var(--color-teal);
+  border: 1px solid var(--color-teal-border);
+}
+.rsc-meta { font-size: 12px; color: var(--color-text-muted); }
+
+/* Saved confirmation */
+.rsc-saved {
+  margin: 10px 16px;
+  padding: 10px 14px;
+  background: var(--color-green-dim);
+  border: 1px solid var(--color-green-border);
+  border-radius: 10px;
+  color: var(--color-green);
+  font-size: 14px; font-weight: 600; text-align: center;
+}
+
+/* Action buttons */
+.rsc-actions {
+  display: flex; gap: 8px; padding: 10px 16px 4px;
+}
+.rsc-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 4px; border-radius: 12px; border: 1px solid var(--color-border);
+  background: var(--color-dim); cursor: pointer; color: var(--color-text-muted);
+  font-size: 12px; font-weight: 600; transition: all 0.15s;
+}
+.rsc-btn:hover { border-color: var(--color-text-muted); color: var(--color-text-primary); }
+.rsc-btn-icon { font-size: 22px; }
+.rsc-add {
+  background: var(--color-teal-dim); border-color: var(--color-teal-border);
+  color: var(--color-teal);
+}
+.rsc-add:hover { background: rgba(20,184,166,0.2); }
+
+/* Hint + counter */
+.rsc-hint {
+  text-align: center; font-size: 11px; color: var(--color-text-muted);
+  padding: 2px 0 4px; opacity: 0.7;
+}
+.rsc-counter {
+  text-align: center; font-size: 11px; color: var(--color-text-muted);
+  padding-bottom: 12px; opacity: 0.5;
+}
+
+/* Day picker */
+.rsc-daypicker { padding: 10px 16px 8px; }
+.rsc-dp-label {
+  font-size: 13px; font-weight: 600; color: var(--color-text-muted);
+  margin-bottom: 10px; text-align: center;
+}
+.rsc-days {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 10px;
+}
+.rsc-day {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 8px 2px; border-radius: 10px; border: 1px solid var(--color-border);
+  background: var(--color-dim); cursor: pointer; color: var(--color-text-muted);
+  font-size: 10px; font-weight: 600; transition: all 0.15s;
+}
+.rsc-day:hover:not(:disabled) {
+  border-color: var(--color-teal-border); color: var(--color-teal);
+  background: var(--color-teal-dim);
+}
+.rsc-day:disabled { opacity: 0.5; cursor: wait; }
+.rsc-day-today {
+  border-color: var(--color-amber-border) !important;
+  background: var(--color-amber-dim) !important;
+  color: var(--color-amber) !important;
+}
+.rsc-day-label { font-size: 10px; font-weight: 700; }
+.rsc-day-sub { font-size: 9px; opacity: 0.75; }
+.rsc-back {
+  display: block; width: 100%; padding: 8px;
+  background: transparent; border: 1px solid var(--color-border);
+  border-radius: 10px; color: var(--color-text-muted);
+  cursor: pointer; font-size: 12px; transition: all 0.15s;
+}
+.rsc-back:hover { background: var(--color-dim); color: var(--color-text-primary); }
+
+/* Loading / empty */
+.rsc-placeholder {
+  padding: 40px 16px; text-align: center;
+  font-size: 14px; color: var(--color-text-muted);
+}
+
+/* FAB – floating action button */
+.rsc-fab {
+  position: fixed; bottom: 80px; right: 18px; z-index: 90;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--color-teal); border: none; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(20,184,166,0.45);
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.rsc-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(20,184,166,0.6); }
+.rsc-fab:active { transform: scale(0.95); }
