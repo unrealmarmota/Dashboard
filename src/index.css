@@ -249,3 +249,48 @@ input[type=range]::-moz-range-thumb {
 }
 .rsc-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(20,184,166,0.6); }
 .rsc-fab:active { transform: scale(0.95); }
+
+/* ── Molly-Weasley-Uhr ── */
+.molly-clock { overflow: visible; }
+
+/* Zeiger: kumulativer Winkel + weiches Ausschwingen (leichter Overshoot) */
+.molly-hand {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition: transform 1.9s cubic-bezier(0.32, 1.34, 0.44, 1);
+  will-change: transform;
+}
+
+/* Dauerhaftes, minimales Zittern – die Uhr wirkt dadurch "lebendig" */
+.molly-quiver {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: mollyQuiver 5.5s ease-in-out infinite;
+}
+@keyframes mollyQuiver {
+  0%, 100% { transform: rotate(-0.7deg); }
+  33%      { transform: rotate(0.5deg); }
+  66%      { transform: rotate(-0.2deg); }
+}
+
+/* Ankunfts-Impuls, sobald ein Zeiger einen neuen Sektor erreicht */
+.molly-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mollyPulse 1.4s 0.9s ease-out both;
+}
+@keyframes mollyPulse {
+  0%   { transform: scale(0.7); opacity: 0.9; }
+  70%  { opacity: 0.35; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Sektor-Hervorhebung faded mit, wenn der Zeiger ankommt */
+.molly-wedge { transition: opacity 1.2s ease-out; }
+
+.molly-row { appearance: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .molly-hand { transition-duration: 0.3s; }
+  .molly-quiver, .molly-pulse { animation: none; }
+}

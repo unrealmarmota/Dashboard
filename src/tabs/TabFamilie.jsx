@@ -5,6 +5,7 @@ import { ChoresCard } from '../cards/ChoresCard'
 import { CalendarCard } from '../cards/CalendarCard'
 import { CountdownCard } from '../cards/CountdownCard'
 import { RecipeSwipeCard } from '../cards/RecipeSwipeCard'
+import { MollyClockCard } from '../cards/MollyClockCard'
 
 export function TabFamilie() {
   const [showSwipe, setShowSwipe] = useState(false)
@@ -17,6 +18,9 @@ export function TabFamilie() {
 
   return (
     <div className="familie-tab space-y-3">
+      {/* Familienuhr à la Molly Weasley */}
+      <MollyClockCard />
+
       {/* Essensplan: volle Breite, horizontal */}
       <MealPlanCard key={mealPlanKey} horizontal />
 

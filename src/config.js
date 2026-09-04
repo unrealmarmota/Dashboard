@@ -24,6 +24,34 @@ export const TANDOOR_URL = '/tandoor'
 export const TANDOOR_TOKEN = 'tda_d9b9bac2_4b45_4cc9_9f6c_9fa548e553ce'
 export const BRING_ENTITY = 'todo.einkaufszettel'
 export const CHORES_URL = '/chores'
+// ─── Molly-Weasley-Uhr ──────────────────────────────────────────────
+// Pro Person nur `entity` noetig, alles Weitere ist optional und wird
+// ignoriert, solange die Entitaet in HA nicht existiert:
+//   proximity – proximity-Integration Richtung Zuhause (erkennt "Heimweg")
+//   calendar  – laufender Termin mit "Urlaub"/"Ferien" -> Sektor Urlaub
+//   override  – input_select zum manuellen Setzen ("Auto" = Automatik)
+//   peril     – binary_sensor/input_boolean fuer "Lebensgefahr"
+export const MOLLY_PERSONS = [
+  {
+    key: 'johannes', name: 'Johannes', avatar: '\uD83D\uDC68',
+    entity: 'person.johannes',
+    proximity: 'proximity.johannes_zuhause',
+    calendar: 'calendar.johannes',
+    override: 'input_select.molly_johannes',
+    peril: 'binary_sensor.molly_johannes_gefahr',
+    color: 'var(--color-blue)',
+  },
+  {
+    key: 'tanja', name: 'Tanja', avatar: '\uD83D\uDC69',
+    entity: 'person.tanja',
+    proximity: 'proximity.tanja_zuhause',
+    calendar: 'calendar.tanja',
+    override: 'input_select.molly_tanja',
+    peril: 'binary_sensor.molly_tanja_gefahr',
+    color: 'var(--color-amber)',
+  },
+]
+
 export const HA_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmYzhlNTQ0MGNhZDk0NzE2YjdiOTVjMGQ2OTMzN2JkMiIsImlhdCI6MTc3MjcwMzExMCwiZXhwIjoyMDg4MDYzMTEwfQ.qqMmYjsl7Ovt2fYzHc38VaYdCpoIqCvQbny9vnk00uY'
 
 // ─── HELPERS ────────────────────────────────────────────────────────
