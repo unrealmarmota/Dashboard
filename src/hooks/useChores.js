@@ -10,7 +10,7 @@ const api = (path, opts = {}) =>
     return r.json()
   })
 
-export function useChores() {
+export function useChores(enabled = true) {
   const [todayData, setTodayData] = useState(null)
   const [weekData, setWeekData] = useState(null)
   const [stats, setStats] = useState(null)
@@ -59,6 +59,7 @@ export function useChores() {
 
   // Initial + polling
   useEffect(() => {
+    if (!enabled) { setLoading(false); return }
     let cancelled = false
     const poll = async () => {
       if (cancelled) return
@@ -68,7 +69,7 @@ export function useChores() {
     poll()
     const iv = setInterval(poll, 30_000)
     return () => { cancelled = true; clearInterval(iv) }
-  }, [fetchToday, fetchStats])
+  }, [enabled, fetchToday, fetchStats])
 
   // ─── Mutations ─────────────────────────────────────────────────────
 

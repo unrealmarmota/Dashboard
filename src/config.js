@@ -35,17 +35,17 @@ export const CHORES_URL = '/chores'
 //   peril     – binary_sensor/input_boolean fuer "Lebensgefahr"
 export const MOLLY_PERSONS = [
   {
-    key: 'johannes', name: 'Johannes', avatar: '\uD83D\uDC68',
+    key: 'johannes', name: 'Johannes', initial: 'J',
     entity: 'person.johannes',
     proximity: 'proximity.johannes_zuhause',
     place: 'sensor.johannes_place',
     calendar: 'calendar.johannes',
     override: 'input_select.molly_johannes',
     peril: 'binary_sensor.molly_johannes_gefahr',
-    color: 'var(--color-blue)',
+    color: 'var(--color-teal)',
   },
   {
-    key: 'tanja', name: 'Tanja', avatar: '\uD83D\uDC69',
+    key: 'tanja', name: 'Tanja', initial: 'T',
     entity: 'person.tanja',
     proximity: 'proximity.tanja_zuhause',
     place: 'sensor.tanja_place',

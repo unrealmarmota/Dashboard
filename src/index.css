@@ -38,6 +38,9 @@
 
   --font-sans: 'Outfit', system-ui, sans-serif;
   --font-mono: 'DM Mono', 'Fira Code', monospace;
+  /* Nur fuer die Familienuhr: Messing = Kapitaelchen-Antiqua, Wurzelwerk = warme Antiqua */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-display-vine: 'Vollkorn', Georgia, serif;
 }
 
 /* ── Base Reset ── */
@@ -251,7 +254,110 @@ input[type=range]::-moz-range-thumb {
 .rsc-fab:active { transform: scale(0.95); }
 
 /* ── Molly-Weasley-Uhr ── */
-.molly-clock { overflow: visible; }
+.molly-dial svg { overflow: visible; display: block; width: 100%; height: auto; }
+
+/* Hero-Layout: Uhr in der Mitte, Personen flankieren sie */
+.molly-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "dial" "a" "b";
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.molly-dial { grid-area: dial; justify-self: center; width: min(100%, 330px); }
+.molly-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.molly-side-a { grid-area: a; }
+.molly-side-b { grid-area: b; }
+
+@media (min-width: 900px) {
+  .molly-body { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "a dial b"; gap: 28px; }
+  .molly-dial { width: 440px; }
+  /* gespiegelt, damit die Plaketten die Uhr rahmen */
+  .molly-side-a .molly-plate { flex-direction: row-reverse; text-align: right; }
+  .molly-side-a .molly-place { flex-direction: row-reverse; }
+}
+@media (min-width: 1180px) { .molly-dial { width: 520px; } }
+
+/* Personen-Plakette */
+.molly-plate {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 13px 15px; border-radius: 14px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  font: inherit; text-align: left; cursor: default; min-width: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.molly-plate-tap { cursor: pointer; }
+.molly-plate-tap:hover { border-color: var(--color-amber-border); }
+.molly-plate-alarm { background: var(--color-red-dim); border-color: var(--color-red-border); }
+.molly-skin-brass .molly-plate:not(.molly-plate-alarm) {
+  background: var(--color-amber-dim); border-color: var(--color-amber-border);
+}
+.molly-skin-vine .molly-plate:not(.molly-plate-alarm) {
+  background: rgba(63, 92, 71, 0.1); border-color: rgba(107, 90, 62, 0.45);
+}
+.molly-plate-text { min-width: 0; flex: 1; }
+
+.molly-disc {
+  flex: none; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.6px solid currentColor; background: var(--color-card);
+  font-family: var(--font-display); font-size: 21px; font-weight: 600; line-height: 1;
+}
+.molly-disc-lg { width: 56px; height: 56px; font-size: 26px; }
+
+.molly-name {
+  display: block;
+  font-family: var(--font-display); font-size: 16px; font-weight: 600;
+  letter-spacing: 1.4px; font-variant: small-caps; line-height: 1.1;
+}
+.molly-place {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-sans); font-size: 21px; font-weight: 400;
+  color: var(--color-text-primary); line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.molly-detail {
+  display: block; margin-top: 2px;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--color-text-muted);
+}
+.molly-edit { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); }
+
+/* Beschriftung auf dem Zifferblatt */
+.molly-sector-label {
+  font-family: var(--font-display); font-size: 15.5px;
+  letter-spacing: 1.1px; font-variant: small-caps;
+}
+.molly-sector-label-vine {
+  font-family: var(--font-display-vine); font-size: 14.5px;
+  letter-spacing: 0.2px; font-variant: normal;
+}
+.molly-hand-initial { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.molly-hand-initial-vine { font-family: var(--font-display-vine); }
+
+.molly-foot {
+  margin-top: 12px; text-align: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--color-text-muted); opacity: 0.7;
+}
+
+/* Umschalter Messing / Wurzelwerk */
+.molly-skin-toggle {
+  display: flex; gap: 2px; padding: 2px; border-radius: 999px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+}
+.molly-skin-toggle button {
+  border: none; background: transparent; color: var(--color-text-muted);
+  font-family: var(--font-mono); font-size: 11px; padding: 4px 11px;
+  border-radius: 999px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.molly-skin-toggle button:hover { color: var(--color-text-primary); }
+.molly-skin-brass .molly-skin-toggle button.is-active {
+  background: var(--color-amber-dim); color: var(--color-amber);
+}
+.molly-skin-vine .molly-skin-toggle button.is-active {
+  background: rgba(74, 222, 128, 0.12); color: #6ba97f;
+}
 
 /* Zeiger: kumulativer Winkel + weiches Ausschwingen (leichter Overshoot) */
 .molly-hand {
@@ -286,9 +392,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 /* Sektor-Hervorhebung faded mit, wenn der Zeiger ankommt */
-.molly-wedge { transition: opacity 1.2s ease-out; }
-
-.molly-row { appearance: none; }
+.molly-wedge { transition: opacity 1.2s ease-out, fill-opacity 1.2s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
   .molly-hand { transition-duration: 0.3s; }

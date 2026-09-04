@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { GCAL_CALENDARS } from '../config'
 import { parseICS } from '../lib/parseICS'
 
-export function useGoogleCalendar(daysAhead = 7) {
+export function useGoogleCalendar(daysAhead = 7, enabled = true) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!enabled) { setLoading(false); return }
     let cancelled = false
 
     const fetchCalendars = async () => {
@@ -47,7 +48,7 @@ export function useGoogleCalendar(daysAhead = 7) {
     fetchCalendars()
     const iv = setInterval(fetchCalendars, 300_000) // 5 Min
     return () => { cancelled = true; clearInterval(iv) }
-  }, [daysAhead])
+  }, [daysAhead, enabled])
 
   return { events, loading, error }
 }

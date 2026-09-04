@@ -10,6 +10,7 @@ const DEFAULTS = {
   theme: 'dark',
   accent: 'teal',
   font: 'sans',
+  mollySkin: 'brass',
 }
 
 function loadSettings() {

@@ -18,11 +18,11 @@ export function TabFamilie() {
 
   return (
     <div className="familie-tab space-y-3">
-      {/* Familienuhr à la Molly Weasley */}
+      {/* Hero: Familienuhr – Zifferblatt mittig, Personen flankieren es */}
       <MollyClockCard />
 
-      {/* Essensplan: volle Breite, horizontal */}
-      <MealPlanCard key={mealPlanKey} horizontal />
+      {/* Wochenplan: Essen + Termine + Aufgaben pro Tag, horizontal scrollbar */}
+      <MealPlanCard key={mealPlanKey} horizontal agenda />
 
       {/* Aufgaben + Einkauf + Kalender + Countdown darunter */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-3 items-start">

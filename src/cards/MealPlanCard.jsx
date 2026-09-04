@@ -1,7 +1,9 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Card, Label, Pill, InfoModal } from '../atoms'
 import { useHA } from '../context/HAContext'
 import { useTandoor } from '../hooks/useTandoor'
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
+import { useChores } from '../hooks/useChores'
 import { BRING_ENTITY } from '../config'
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -294,6 +296,50 @@ function AddNoteInput({ date, onAdd, onSearch }) {
   )
 }
 
+// ── Abschnitte innerhalb einer Tagesspalte (Wochenplan) ─────────────
+
+function SectionHead({ children }) {
+  return (
+    <div className="text-[10px] tracking-[1.2px] text-text-muted font-mono uppercase mt-2.5 mb-1 opacity-70">
+      {children}
+    </div>
+  )
+}
+
+function EventRow({ ev }) {
+  const time = ev.allDay
+    ? 'ganzt\u00E4gig'
+    : ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  return (
+    <div className="flex gap-1.5 py-1 border-b border-border/30 last:border-0"
+      style={{ borderLeft: `2px solid ${ev.color}`, paddingLeft: 6 }}>
+      <div className="min-w-0">
+        <div className="text-[11px] font-mono" style={{ color: ev.color }}>{time}</div>
+        <div className="text-[13px] text-text-primary leading-snug line-clamp-2">{ev.summary || 'Kein Titel'}</div>
+      </div>
+    </div>
+  )
+}
+
+function TaskRowMini({ task, date, onToggle }) {
+  return (
+    <div className="flex items-start gap-2 py-1 border-b border-border/30 last:border-0">
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(task, date) }}
+        className={`w-5 h-5 mt-0.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center text-[11px] transition-colors cursor-pointer ${
+          task.done ? 'border-green bg-green/[0.2] text-green' : 'border-border hover:border-amber'
+        }`}
+        title={task.done ? 'Erledigt' : 'Als erledigt markieren'}
+      >
+        {task.done && '\u2713'}
+      </button>
+      <span className={`text-[13px] leading-snug line-clamp-2 ${
+        task.done ? 'line-through text-text-muted' : task.overdue ? 'text-red' : 'text-text-primary'
+      }`}>{task.title}</span>
+    </div>
+  )
+}
+
 // ── Day Column (horizontal mode) with tap-to-move ───────────────────
 
 function EntryRow({ entry, movingEntry, onEntryClick, onSelectEntry, onDeleteEntry }) {
@@ -380,7 +426,7 @@ function EntryRow({ entry, movingEntry, onEntryClick, onSelectEntry, onDeleteEnt
   )
 }
 
-function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEntry, onSearch, movingEntry, onSelectEntry, onMoveToDay }) {
+function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEntry, onSearch, movingEntry, onSelectEntry, onMoveToDay, agenda, events = [], tasks = [], onToggleTask }) {
   const today = isToday(date)
   const isTarget = movingEntry && movingEntry.date !== dateKey(date)
 
@@ -391,7 +437,7 @@ function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEnt
   return (
     <div
       onClick={handleDayClick}
-      className={`flex-1 min-w-[140px] p-2.5 rounded-xl flex flex-col transition-all snap-start ${
+      className={`flex-1 ${agenda ? 'min-w-[158px]' : 'min-w-[140px]'} p-2.5 rounded-xl flex flex-col transition-all snap-start ${
         isTarget
           ? 'bg-teal/[0.08] border-2 border-dashed border-teal/[0.35] cursor-pointer'
           : today
@@ -408,6 +454,7 @@ function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEnt
         </span>
       </div>
       <div className="flex-1">
+        {agenda && <SectionHead>Essen</SectionHead>}
         {entries.length > 0 ? entries.map((entry, i) => (
           <EntryRow
             key={entry.id || i}
@@ -420,6 +467,20 @@ function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEnt
         )) : (
           <div className="text-sm text-text-muted italic py-1">Kein Plan</div>
         )}
+
+        {agenda && (
+          <>
+            <SectionHead>Termine</SectionHead>
+            {events.length > 0
+              ? events.map((ev, i) => <EventRow key={`${ev.summary}-${i}`} ev={ev} />)
+              : <div className="text-[13px] text-text-muted italic py-1">Keine</div>}
+
+            <SectionHead>Aufgaben</SectionHead>
+            {tasks.length > 0
+              ? tasks.map(t => <TaskRowMini key={t.id} task={t} date={dateKey(date)} onToggle={onToggleTask} />)
+              : <div className="text-[13px] text-text-muted italic py-1">Keine</div>}
+          </>
+        )}
       </div>
       {!movingEntry && <AddNoteInput date={dateKey(date)} onAdd={onAddNote} onSearch={onSearch} />}
       {isTarget && (
@@ -431,12 +492,38 @@ function DayColumn({ date, entries, dayIdx, onEntryClick, onAddNote, onDeleteEnt
 
 // ── MealPlanCard ────────────────────────────────────────────────────
 
-export function MealPlanCard({ horizontal = false }) {
+export function MealPlanCard({ horizontal = false, agenda = false }) {
   const { mealPlan, weekRange, loading, error, getRecipe, addMealPlanEntry, deleteMealPlanEntry, moveMealPlanEntry, searchRecipes } = useTandoor()
   const { sendMessage } = useHA()
   const [selectedEntry, setSelectedEntry] = useState(null)
   const [movingEntry, setMovingEntry] = useState(null)
   const weekDates = getWeekDates(weekRange)
+
+  // Wochenplan: Termine + Aufgaben derselben Woche dazuholen
+  const { events: gcalEvents } = useGoogleCalendar(8, agenda)
+  const { weekData, fetchWeek, completeTask, uncompleteTask } = useChores(agenda)
+  useEffect(() => { if (agenda) fetchWeek() }, [agenda, fetchWeek])
+
+  // Termine nach Tag buendeln (nur im Agenda-Modus)
+  const eventsByDay = useMemo(() => {
+    if (!agenda) return {}
+    const m = {}
+    for (const ev of gcalEvents) (m[dateKey(ev.start)] ||= []).push(ev)
+    return m
+  }, [agenda, gcalEvents])
+
+  // Aufgaben nach Tag – die Chores-API liefert die Woche bereits so
+  const tasksByDay = useMemo(() => {
+    const m = {}
+    for (const day of weekData?.week ?? []) m[day.date] = day.tasks ?? []
+    return m
+  }, [weekData])
+
+  const handleToggleTask = useCallback(async (task, date) => {
+    if (task.done) await uncompleteTask(task.id, date)
+    else await completeTask(task.id, date, task.assignee)
+    await fetchWeek()
+  }, [completeTask, uncompleteTask, fetchWeek])
 
   const addToBring = useCallback(async (items) => {
     // Fetch existing Bring! items to avoid duplicates
@@ -492,7 +579,7 @@ export function MealPlanCard({ horizontal = false }) {
       <>
         <Card>
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="text-sm tracking-[1.5px] text-text-muted font-mono uppercase">Essensplan</div>
+            <div className="text-sm tracking-[1.5px] text-text-muted font-mono uppercase">{agenda ? 'Wochenplan' : 'Essensplan'}</div>
             {kwLabel && !movingEntry && <Pill color="teal">{kwLabel}</Pill>}
             {movingEntry && (
               <button
@@ -530,6 +617,10 @@ export function MealPlanCard({ horizontal = false }) {
                   movingEntry={movingEntry}
                   onSelectEntry={setMovingEntry}
                   onMoveToDay={handleMoveToDay}
+                  agenda={agenda}
+                  events={eventsByDay[dateKey(date)] ?? []}
+                  tasks={tasksByDay[dateKey(date)] ?? []}
+                  onToggleTask={handleToggleTask}
                 />
               ))}
             </div>
