@@ -73,6 +73,76 @@ proximity:
 Liefert `dir_of_travel` (`towards` / `away_from` / `stationary`) und die
 Entfernung – daraus wird „Heimweg – noch 8,4 km“.
 
+### Auf den Handys einrichten
+
+Ohne das hier bleibt die Uhr träge – die Genauigkeit der Zeiger hängt
+vollständig davon ab, wie oft die Companion-App einen Standort schickt.
+
+**Beide Handys, gemeinsam**
+
+1. HA Companion App installieren und mit einem **eigenen HA-Benutzer** anmelden
+   (nicht denselben für beide – sonst gibt es nur einen `device_tracker`).
+2. In HA unter Einstellungen → Personen bei Johannes bzw. Tanja den jeweiligen
+   `device_tracker` der App zuweisen. Erst dadurch bewegt sich `person.*`.
+3. Benachrichtigungen erlauben – HA erzwingt darüber bei Bedarf ein Standort-Update
+   (`request_location_update`).
+
+**Android**
+
+- Systemeinstellungen → Standort: **„Immer zulassen"** und **genauer Standort** an.
+- Systemeinstellungen → Akku: Akku-Optimierung für HA auf **„Nicht optimiert"**.
+  Sonst friert Android die App im Hintergrund ein.
+- App → Einstellungen → Companion App → Sensoren verwalten → Standortsensoren:
+  - **Background Location** an – Fused Location API, Update alle 1–3 min.
+  - **Location Zone** an – Geofences pro Zone, Zonenwechsel in Sekunden.
+  - **Single Accurate Location** an – erzwingt eine genaue Messung, wenn die
+    gemeldete Genauigkeit schlechter als der Schwellwert (Standard 200 m) ist.
+  - **High Accuracy Mode** – GPS im Sekundentakt. Nicht dauerhaft anschalten;
+    als Bedingung entweder „nicht in Zone Zuhause" mit 500 m Trigger-Range oder
+    das Autoradio als Bluetooth-Bedingung. Genau das macht den Sektor
+    „Heimweg" flott, ohne den Akku den ganzen Tag zu ziehen.
+
+**iOS**
+
+- Einstellungen → Home Assistant → Standort: **„Immer"** und **genauer Standort** an.
+- **Hintergrundaktualisierung** an, **Stromsparmodus** aus (drosselt Updates).
+- iOS meldet von sich aus nur bei Zonenwechsel, iBeacon-Ereignissen und
+  „signifikanten Standortänderungen" (grob 500 m bzw. Funkzellenwechsel,
+  mindestens alle 15 min). Zwischen zwei Zonen ist ein iPhone dadurch
+  spürbar träger als ein Android-Gerät – dagegen hilft nur ein erzwungenes
+  Update per Automation (siehe unten).
+- iOS überwacht nur eine begrenzte Zahl Regionen gleichzeitig: Zonen sparsam
+  anlegen, sonst fallen die hinteren stillschweigend heraus.
+
+**Zonen**
+
+Radius nicht zu klein wählen (ab ca. 100 m zuverlässig); zu kleine Zonen lösen
+den Geofence gar nicht oder ständig aus.
+
+**Update erzwingen (optional)**
+
+```yaml
+automation:
+  - alias: Standort ausserhalb der Heimzone haeufiger holen
+    trigger:
+      - platform: time_pattern
+        minutes: "/10"
+    condition:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: person.johannes
+            state: home
+    action:
+      - service: notify.mobile_app_<geraetename>
+        data:
+          message: request_location_update
+```
+
+Damit ist die Uhr auch auf dem iPhone nie älter als ~10 Minuten. Preis: etwas
+Akku – bei Bedarf das Intervall vergrößern oder die Automation auf Abend-/
+Feierabendzeiten begrenzen.
+
 ### Orte automatisch kategorisieren (optional)
 
 Für Orte, für die es keine Zone gibt, kann Reverse-Geocoding die Kategorie
