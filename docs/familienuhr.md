@@ -5,6 +5,7 @@ Aufenthalt springt – nach dem Vorbild der Uhr aus dem Fuchsbau.
 
 - Karte: `src/cards/MollyClockCard.jsx` (Darstellung + Animation)
 - Optik-Entwürfe: `design/` (vier organische Richtungen)
+- Design-Spezifikation: `docs/uhr-design.md` (Radien, Farben, Animation im Detail)
 - Haut: Umschalter „Messing / Wurzelwerk" in der Kartenkopfzeile, gespeichert
   als `mollySkin` in den Dashboard-Einstellungen (localStorage)
 - Regeln: `src/lib/mollyClock.js` (welcher Zustand ergibt welchen Sektor)

@@ -28,6 +28,7 @@ src/index.css                .molly-* (Layout + Animation)
 src/context/SettingsContext  mollySkin (brass | vine)
 design/                      Vier Entwürfe + Generatoren
 docs/familienuhr.md          HA-Setup: Zonen, proximity, places, Handys
+docs/uhr-design.md           Design-Spezifikation der Uhr (exakte Werte)
 ```
 
 **Design-Canvas:** <https://claude.ai/code/artifact/6eb11d81-40e8-422a-adf9-192c39a05d8a>
