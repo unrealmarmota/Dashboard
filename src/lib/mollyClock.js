@@ -6,6 +6,8 @@
 // Datenquellen (alle optional ausser `entity`):
 //   entity     person.xyz            – Zustand: home | not_home | <Zonenname>
 //   proximity  proximity.xyz_zuhause – Entfernung + Bewegungsrichtung
+//   place      sensor.xyz_place      – Reverse-Geocoding (custom-components/places),
+//                                    liefert place_category/place_type/place_name
 //   calendar   calendar.xyz          – laufender Termin (Urlaub-Erkennung)
 //   override   input_select.xyz      – manuelle Uebersteuerung ("Auto" = aus)
 //   peril      binary_sensor/input_boolean – "Lebensgefahr" (on = Alarm)
@@ -44,6 +46,25 @@ const ZONE_RULES = [
   { sector: 'visiting', words: ['oma', 'opa', 'eltern', 'schwieger', 'freunde', 'besuch', 'verein', 'sport'] },
   { sector: 'travel',   words: ['bahn', 'bahnhof', 'zug', 'flughafen', 'autobahn', 'unterwegs'] },
 ]
+
+// OSM-Tags (place_category = OSM-Key, place_type = OSM-Value) -> Sektor.
+// Quelle: Reverse-Geocoding ueber die "places"-Integration.
+const PLACE_RULES = [
+  { sector: 'shopping', category: /^(shop|craft)$/ },
+  { sector: 'shopping', type: /^(supermarket|bakery|butcher|mall|department_store|convenience|marketplace|doityourself|hardware|kiosk|greengrocer)$/ },
+  { sector: 'school',   type: /^(school|kindergarten|childcare|university|college|library|music_school|driving_school)$/ },
+  { sector: 'work',     category: /^office$/ },
+  { sector: 'work',     type: /^(office|coworking_space|townhall|industrial|commercial|factory|warehouse)$/ },
+  { sector: 'holiday',  category: /^tourism$/ },
+  { sector: 'holiday',  type: /^(hotel|hostel|guest_house|camp_site|caravan_site|apartment|resort|beach)$/ },
+  { sector: 'visiting', category: /^(healthcare|leisure|sport|club|amenity)$/ },
+  { sector: 'travel',   category: /^(highway|railway|aeroway|waterway|route)$/ },
+  { sector: 'travel',   type: /^(motorway|trunk|primary|secondary|tertiary|residential|service|track|unclassified|rest_area|services|fuel|parking|station|platform|bus_stop|aerodrome)$/ },
+]
+
+// Sektoren, die aus OSM verlaesslich genug sind, um Proximity zu schlagen.
+// Strassen-Treffer ("motorway") sind es nicht – die sollen "Heimweg" nicht verdecken.
+const PLACE_STRONG = ['shopping', 'school', 'work', 'holiday', 'visiting']
 
 const HOLIDAY_RE = /urlaub|ferien|reise|abwesend/i
 
@@ -85,6 +106,20 @@ function hasHolidayEvent(entities, calendarId, now) {
   const end = Date.parse(cal.attributes?.end_time ?? '')
   if (isNaN(start) || isNaN(end)) return true
   return start <= now && now <= end
+}
+
+// Reverse-Geocoding auswerten: {sector, name} oder null
+export function resolvePlace(entities, placeId) {
+  if (!placeId || !entities?.[placeId]) return null
+  const attrs = entities[placeId].attributes ?? {}
+  const category = norm(attrs.place_category)
+  const type = norm(attrs.place_type)
+  if (!category && !type) return null
+  for (const rule of PLACE_RULES) {
+    if (rule.category && category && rule.category.test(category)) return { sector: rule.sector, name: attrs.place_name }
+    if (rule.type && type && rule.type.test(type)) return { sector: rule.sector, name: attrs.place_name }
+  }
+  return null
 }
 
 // Entfernung aus proximity: HA liefert Meter oder Kilometer (Attribut unit_of_measurement)
@@ -150,16 +185,22 @@ export function resolvePerson(entities, cfg, now = Date.now()) {
     return out(zoneToSector(state), state, since, 'zone')
   }
 
-  // 6. Urlaub laut Kalender
+  // 6. Reverse-Geocoding: OSM weiss, was an den Koordinaten steht
+  const place = resolvePlace(entities, cfg.place)
+  if (place && PLACE_STRONG.includes(place.sector)) {
+    return out(place.sector, place.name || undefined, place.name ? sectorById(place.sector).label : since, 'place')
+  }
+
+  // 7. Urlaub laut Kalender
   if (hasHolidayEvent(entities, cfg.calendar, now)) {
     return out('holiday', null, at(entities, cfg.calendar, 'message') ?? since, 'calendar')
   }
 
-  // 7. Auf dem Heimweg (proximity naehert sich)
+  // 8. Auf dem Heimweg (proximity naehert sich)
   if (prox?.dir === 'towards') {
     return out('homeward', null, distance ? `noch ${distance}` : since, 'proximity')
   }
 
-  // 8. Sonst unterwegs
+  // 9. Sonst unterwegs (Strassen-Treffer aus OSM landen ebenfalls hier)
   return out('travel', null, distance ? `${distance} entfernt` : since, 'not_home')
 }

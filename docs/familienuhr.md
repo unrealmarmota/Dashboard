@@ -4,6 +4,7 @@ Zeigt für jede Person einen Zeiger, der automatisch auf den aktuellen
 Aufenthalt springt – nach dem Vorbild der Uhr aus dem Fuchsbau.
 
 - Karte: `src/cards/MollyClockCard.jsx` (Darstellung + Animation)
+- Optik-Entwürfe: `design/` (vier organische Richtungen)
 - Regeln: `src/lib/mollyClock.js` (welcher Zustand ergibt welchen Sektor)
 - Personen: `MOLLY_PERSONS` in `src/config.js`
 - Animation: Abschnitt „Molly-Weasley-Uhr“ in `src/index.css`
@@ -19,9 +20,10 @@ Ausgewertet wird in dieser Reihenfolge, die erste zutreffende Regel gewinnt:
 | 3 | `person.*` ist `unknown`/`unavailable` | **Verschollen** |
 | 4 | `person.*` ist `home` | **Zuhause** |
 | 5 | `person.*` ist ein Zonenname | Sektor per Stichwort, Beschriftung = Zonenname |
-| 6 | laufender Kalendertermin mit „Urlaub/Ferien/Reise“ | **Urlaub** |
-| 7 | `proximity.*` mit `dir_of_travel: towards` | **Heimweg** (inkl. Restdistanz) |
-| 8 | sonst `not_home` | **Unterwegs** (inkl. Distanz, falls bekannt) |
+| 6 | `place`-Sensor liefert eine POI-Kategorie | passender Sektor, Beschriftung = `place_name` |
+| 7 | laufender Kalendertermin mit „Urlaub/Ferien/Reise“ | **Urlaub** |
+| 8 | `proximity.*` mit `dir_of_travel: towards` | **Heimweg** (inkl. Restdistanz) |
+| 9 | sonst `not_home` | **Unterwegs** (inkl. Distanz, falls bekannt) |
 
 Nur `entity` ist Pflicht. Alle anderen Entitäten sind optional – existieren sie
 in HA nicht, wird die jeweilige Regel einfach übersprungen.
@@ -68,6 +70,38 @@ proximity:
 
 Liefert `dir_of_travel` (`towards` / `away_from` / `stationary`) und die
 Entfernung – daraus wird „Heimweg – noch 8,4 km“.
+
+### Orte automatisch kategorisieren (optional)
+
+Für Orte, für die es keine Zone gibt, kann Reverse-Geocoding die Kategorie
+liefern: die HACS-Integration [`custom-components/places`](https://github.com/custom-components/places)
+fragt OpenStreetMap Nominatim ab und legt `place_category` (OSM-Key),
+`place_type` (OSM-Value) und `place_name` als Attribute ab. Kostenlos, ohne
+API-Key. Sensor auf `person.johannes` anlegen und in `MOLLY_PERSONS` als
+`place: 'sensor.johannes_place'` eintragen.
+
+`PLACE_RULES` in `src/lib/mollyClock.js` bildet die OSM-Tags auf Sektoren ab:
+
+| OSM | Sektor | Beschriftung |
+|-----|--------|--------------|
+| `shop` / `supermarket`, `bakery`, `mall` … | Einkauf | `place_name` |
+| `school`, `kindergarten`, `university` … | Schule | `place_name` |
+| `office` / `townhall`, `industrial` … | Arbeit | `place_name` |
+| `tourism` / `hotel`, `camp_site` … | Urlaub | `place_name` |
+| `amenity`, `healthcare`, `leisure`, `sport` | Besuch | `place_name` |
+| `highway` / `motorway`, `parking`, `station` … | *kein Treffer* | – |
+
+Der letzte Fall ist Absicht: ein Straßen-Treffer ist ein schwaches Signal und
+darf „Heimweg“ nicht verdecken – er fällt durch zu Proximity bzw. Unterwegs.
+Ein echter POI schlägt dagegen Proximity.
+
+**Warum nicht Google?** Die Maps Timeline liegt seit Ende 2024 nur noch auf dem
+Gerät, die Cloud-Historie wurde im Juni 2025 abgeschaltet – eine Timeline-API
+gibt es nicht. Bliebe die Places API (Nearby Search): technisch möglich, aber
+ab 5.000 Aufrufen/Monat kostenpflichtig und nur über einen Proxy nutzbar, weil
+der API-Key nicht ins Frontend gehört. Die HA-Integration `google_maps`
+(Location Sharing) ist als Legacy-Platform markiert und wird mit Core 2027.5
+entfernt.
 
 ### Manuelle Übersteuerung (optional)
 

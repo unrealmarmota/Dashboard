@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# Gerendertes Design-Canvas (aus design/*.dc.html reproduzierbar)
+design/familienuhr-entwuerfe.html
+__pycache__/

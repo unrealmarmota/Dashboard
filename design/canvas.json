@@ -1,0 +1,19 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",       "x": 0,   "y": 0,   "w": 840, "h": 520, "title": "Messing & Patina" },
+    { "file": "Tinte.dc.html",      "x": 960, "y": 0,   "w": 840, "h": 520, "title": "Tinte & Pergament" },
+    { "file": "Wurzelwerk.dc.html", "x": 0,   "y": 780, "w": 840, "h": 520, "title": "Wurzelwerk" },
+    { "file": "Nebel.dc.html",      "x": 960, "y": 780, "w": 840, "h": 520, "title": "Nebel & Lichter" }
+  ],
+  "annotations": [
+    { "id": "note-messing", "x": 0, "y": -168, "w": 840,
+      "text": "Organisch über das Material. Gestochene Messingbögen mit Lücken, handgekippte Trennstriche, Patina-Korn; belegte Sektoren sind schraffiert statt gefüllt. Zeiger als geschmiedete Nadel mit Gegengewicht.\n\nStärke: bleibt auf dem Wandtablet aus 3 m lesbar und passt zum Downton-Theme (#d4a853 ist bereits in themes.js).\nPreis: die Serifen-Kapitälchen sind eine neue Schrift im Dashboard (Cormorant Garamond)." },
+    { "id": "note-tinte", "x": 960, "y": -168, "w": 840,
+      "text": "Organisch über die Hand. Zwei ungleiche Tintenkreise, wacklige Trennstriche, Kreuzschraffur, Federzug statt Zeiger, Tintenklecks als Zeigerkopf. Helle Tinte auf dunklem Papier, damit es im Dark-Dashboard bleibt.\n\nStärke: am nächsten am Fuchsbau-Gefühl, größter Wiedererkennungswert.\nPreis: Caveat ist auf Distanz die am schlechtesten lesbare Variante – für ein Flur-Tablet grenzwertig." },
+    { "id": "note-wurzel", "x": 0, "y": 592, "w": 840,
+      "text": "Organisch über die Natur-Metapher. Kein Zifferblatt mehr: eine Ranke trägt zehn Blätter, jede Person ist eine Laterne am wachsenden Trieb, der sich zum Ort hin biegt.\n\nStärke: die wärmste und eigenständigste Variante, Glühen zeigt Belegung ohne Farbfläche.\nPreis: skaliert am schlechtesten – ab drei Personen wird das Rankengeflecht unruhig, und die Blätter tragen weniger Kontrast als Sektoren." },
+    { "id": "note-nebel", "x": 960, "y": 592, "w": 840,
+      "text": "Organisch über das Licht. Bricht die Kreisgeometrie ganz auf: Orte sind weiche Lichtfelder in loser Konstellation, Zuhause liegt als Anker in der Mitte, ein gepunkteter Faden zeigt die Entfernung.\n\nStärke: fügt sich am unauffälligsten ins bestehende Dashboard (nur Outfit/DM Mono, vorhandene Tokens).\nPreis: verliert die Uhr-Metapher – ohne Zeiger und Zifferblatt ist es keine Molly-Uhr mehr, sondern eine Karte." }
+  ],
+  "launch": { "view": "canvas" }
+}
