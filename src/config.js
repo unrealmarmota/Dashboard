@@ -27,7 +27,9 @@ export const CHORES_URL = '/chores'
 // ─── Molly-Weasley-Uhr ──────────────────────────────────────────────
 // Pro Person nur `entity` noetig, alles Weitere ist optional und wird
 // ignoriert, solange die Entitaet in HA nicht existiert:
-//   proximity – proximity-Integration Richtung Zuhause (erkennt "Heimweg")
+//   proximity – Praefix der proximity-Sensoren, z.B. 'sensor.zuhause_tanja'
+//               (erkennt "Heimweg"). Weggelassen = Auto-Erkennung ueber `key`.
+//               Alternativ `direction` und `distance` einzeln setzen.
 //   place     – "places"-Integration (HACS): Reverse-Geocoding via OpenStreetMap,
 //               kategorisiert unbekannte Orte automatisch (Supermarkt, Praxis, Hotel ...)
 //   calendar  – laufender Termin mit "Urlaub"/"Ferien" -> Sektor Urlaub
@@ -37,7 +39,6 @@ export const MOLLY_PERSONS = [
   {
     key: 'johannes', name: 'Johannes', initial: 'J',
     entity: 'person.johannes',
-    proximity: 'proximity.johannes_zuhause',
     place: 'sensor.johannes_place',
     calendar: 'calendar.johannes',
     override: 'input_select.molly_johannes',
@@ -47,7 +48,6 @@ export const MOLLY_PERSONS = [
   {
     key: 'tanja', name: 'Tanja', initial: 'T',
     entity: 'person.tanja',
-    proximity: 'proximity.tanja_zuhause',
     place: 'sensor.tanja_place',
     calendar: 'calendar.tanja',
     override: 'input_select.molly_tanja',

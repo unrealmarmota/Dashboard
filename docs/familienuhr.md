@@ -25,7 +25,7 @@ Ausgewertet wird in dieser Reihenfolge, die erste zutreffende Regel gewinnt:
 | 5 | `person.*` ist ein Zonenname | Sektor per Stichwort, Beschriftung = Zonenname |
 | 6 | `place`-Sensor liefert eine POI-Kategorie | passender Sektor, Beschriftung = `place_name` |
 | 7 | laufender Kalendertermin mit „Urlaub/Ferien/Reise“ | **Urlaub** |
-| 8 | `proximity.*` mit `dir_of_travel: towards` | **Heimweg** (inkl. Restdistanz) |
+| 8 | Richtungssensor sagt `towards` oder `arrived` | **Heimweg** (inkl. Restdistanz) |
 | 9 | sonst `not_home` | **Unterwegs** (inkl. Distanz, falls bekannt) |
 
 Nur `entity` ist Pflicht. Alle anderen Entitäten sind optional – existieren sie
@@ -54,95 +54,43 @@ ergänzen.
 
 ### Proximity – erkennt den Heimweg
 
-```yaml
-# configuration.yaml
-proximity:
-  johannes_zuhause:
-    zone: home
-    devices:
-      - person.johannes
-    tolerance: 50
-    unit_of_measurement: m
-  tanja_zuhause:
-    zone: home
-    devices:
-      - person.tanja
-    tolerance: 50
-    unit_of_measurement: m
+Wird seit HA 2024.2 **über die Oberfläche** eingerichtet, nicht mehr per YAML:
+Einstellungen → Geräte & Dienste → Integration hinzufügen → **Proximity**.
+Zone `home` wählen, Johannes und Tanja als verfolgte Personen eintragen,
+Toleranz etwa 50 m (filtert GPS-Zittern heraus, sonst springt die Richtung).
+
+Die Integration legt pro Person zwei Sensoren an:
+
+```
+sensor.<name>_<person>_distance
+sensor.<name>_<person>_direction_of_travel
 ```
 
-Liefert `dir_of_travel` (`towards` / `away_from` / `stationary`) und die
-Entfernung – daraus wird „Heimweg – noch 8,4 km“.
+Der Richtungssensor kennt `towards`, `away_from`, `stationary`, `arrived`
+und `unknown`. Die Uhr wertet `towards` und `arrived` als **Heimweg**, alles
+andere fällt auf **Unterwegs** durch.
 
-### Auf den Handys einrichten
+In `MOLLY_PERSONS` muss dafür nichts stehen: die Karte sucht selbst nach einem
+`sensor.*_direction_of_travel`, dessen Entitäts-ID den `key` der Person
+enthält. Liegt die Automatik daneben, den Präfix explizit setzen:
 
-Ohne das hier bleibt die Uhr träge – die Genauigkeit der Zeiger hängt
-vollständig davon ab, wie oft die Companion-App einen Standort schickt.
-
-**Beide Handys, gemeinsam**
-
-1. HA Companion App installieren und mit einem **eigenen HA-Benutzer** anmelden
-   (nicht denselben für beide – sonst gibt es nur einen `device_tracker`).
-2. In HA unter Einstellungen → Personen bei Johannes bzw. Tanja den jeweiligen
-   `device_tracker` der App zuweisen. Erst dadurch bewegt sich `person.*`.
-3. Benachrichtigungen erlauben – HA erzwingt darüber bei Bedarf ein Standort-Update
-   (`request_location_update`).
-
-**Android**
-
-- Systemeinstellungen → Standort: **„Immer zulassen"** und **genauer Standort** an.
-- Systemeinstellungen → Akku: Akku-Optimierung für HA auf **„Nicht optimiert"**.
-  Sonst friert Android die App im Hintergrund ein.
-- App → Einstellungen → Companion App → Sensoren verwalten → Standortsensoren:
-  - **Background Location** an – Fused Location API, Update alle 1–3 min.
-  - **Location Zone** an – Geofences pro Zone, Zonenwechsel in Sekunden.
-  - **Single Accurate Location** an – erzwingt eine genaue Messung, wenn die
-    gemeldete Genauigkeit schlechter als der Schwellwert (Standard 200 m) ist.
-  - **High Accuracy Mode** – GPS im Sekundentakt. Nicht dauerhaft anschalten;
-    als Bedingung entweder „nicht in Zone Zuhause" mit 500 m Trigger-Range oder
-    das Autoradio als Bluetooth-Bedingung. Genau das macht den Sektor
-    „Heimweg" flott, ohne den Akku den ganzen Tag zu ziehen.
-
-**iOS**
-
-- Einstellungen → Home Assistant → Standort: **„Immer"** und **genauer Standort** an.
-- **Hintergrundaktualisierung** an, **Stromsparmodus** aus (drosselt Updates).
-- iOS meldet von sich aus nur bei Zonenwechsel, iBeacon-Ereignissen und
-  „signifikanten Standortänderungen" (grob 500 m bzw. Funkzellenwechsel,
-  mindestens alle 15 min). Zwischen zwei Zonen ist ein iPhone dadurch
-  spürbar träger als ein Android-Gerät – dagegen hilft nur ein erzwungenes
-  Update per Automation (siehe unten).
-- iOS überwacht nur eine begrenzte Zahl Regionen gleichzeitig: Zonen sparsam
-  anlegen, sonst fallen die hinteren stillschweigend heraus.
-
-**Zonen**
-
-Radius nicht zu klein wählen (ab ca. 100 m zuverlässig); zu kleine Zonen lösen
-den Geofence gar nicht oder ständig aus.
-
-**Update erzwingen (optional)**
-
-```yaml
-automation:
-  - alias: Standort ausserhalb der Heimzone haeufiger holen
-    trigger:
-      - platform: time_pattern
-        minutes: "/10"
-    condition:
-      - condition: not
-        conditions:
-          - condition: state
-            entity_id: person.johannes
-            state: home
-    action:
-      - service: notify.mobile_app_<geraetename>
-        data:
-          message: request_location_update
+```js
+proximity: 'sensor.zuhause_tanja',   // ergibt _distance und _direction_of_travel
+// oder einzeln:
+direction: 'sensor.irgendwas_anders',
+distance:  'sensor.noch_was_anderes',
 ```
 
-Damit ist die Uhr auch auf dem iPhone nie älter als ~10 Minuten. Preis: etwas
-Akku – bei Bedarf das Intervall vergrößern oder die Automation auf Abend-/
-Feierabendzeiten begrenzen.
+> Die alte `proximity.*`-Entität mit dem Attribut `dir_of_travel` fiel mit
+> HA 2024.8 weg. Die Karte liest sie weiterhin, falls jemand auf einem alten
+> Stand ist — neu aufsetzen sollte man damit aber nicht.
+
+**Warum „Heimweg" trotz korrekter Einrichtung nicht kommt:** die Richtung
+braucht **zwei** Standort-Updates, um berechnet zu werden. Direkt nach dem
+Losfahren steht sie auf `unknown` oder `stationary` — die Uhr zeigt dann
+„Unterwegs". Auf dem iPhone kann das dauern, weil iOS zwischen zwei Zonen nur
+bei signifikanten Standortänderungen meldet; dagegen hilft die
+`request_location_update`-Automation weiter unten.
 
 ### Orte automatisch kategorisieren (optional)
 

@@ -5,7 +5,8 @@
 //
 // Datenquellen (alle optional ausser `entity`):
 //   entity     person.xyz            – Zustand: home | not_home | <Zonenname>
-//   proximity  proximity.xyz_zuhause – Entfernung + Bewegungsrichtung
+//   proximity  sensor.zuhause_xyz    – Praefix der proximity-Sensoren
+//              (oder direction/distance einzeln, oder proximity.* alt)
 //   place      sensor.xyz_place      – Reverse-Geocoding (custom-components/places),
 //                                    liefert place_category/place_type/place_name
 //   calendar   calendar.xyz          – laufender Termin (Urlaub-Erkennung)
@@ -122,21 +123,73 @@ export function resolvePlace(entities, placeId) {
   return null
 }
 
-// Entfernung aus proximity: HA liefert Meter oder Kilometer (Attribut unit_of_measurement)
-function proximityInfo(entities, proximityId) {
-  if (!proximityId || !entities?.[proximityId]) return null
-  const ent = entities[proximityId]
-  const raw = parseFloat(ent.state)
-  const unit = ent.attributes?.unit_of_measurement ?? 'm'
-  const dir = String(ent.attributes?.dir_of_travel ?? '').toLowerCase()
-  const km = isNaN(raw) ? null : (unit === 'km' ? raw : raw / 1000)
-  return { km, dir }
+// Entfernung + Bewegungsrichtung aus der proximity-Integration.
+//
+// Seit HA 2024.2 legt sie je Person zwei Sensoren an; die alte
+// proximity.*-Entitaet mit dem dir_of_travel-Attribut wurde mit 2024.8
+// entfernt. Beide Formen werden unterstuetzt:
+//
+//   cfg.direction / cfg.distance  explizite Entitaeten (gewinnt)
+//   cfg.proximity = 'sensor.zuhause_tanja'
+//                                 Praefix -> _direction_of_travel / _distance
+//   cfg.proximity = 'proximity.x' Altbestand, Richtung im Attribut
+//
+// Ohne alles davon: Suche nach einem *_direction_of_travel-Sensor, dessen
+// Entitaets-ID den Personenschluessel enthaelt.
+const DIR_SUFFIX = '_direction_of_travel'
+
+function findDirectionSensor(entities, key) {
+  if (!key) return null
+  const needle = norm(key)
+  return Object.keys(entities ?? {}).find(id =>
+    id.startsWith('sensor.') && id.endsWith(DIR_SUFFIX) && norm(id).includes(needle)) ?? null
 }
 
-const fmtDistance = (km) => {
-  if (km == null) return null
-  if (km < 1) return `${Math.round(km * 1000)} m`
-  return `${km.toFixed(km < 10 ? 1 : 0).replace('.', ',')} km`
+function proximityInfo(entities, cfg) {
+  const pid = cfg.proximity
+
+  // Altbestand: Richtung und Entfernung stecken in einer Entitaet
+  if (pid?.startsWith('proximity.') && entities?.[pid]) {
+    const ent = entities[pid]
+    return {
+      dir: String(ent.attributes?.dir_of_travel ?? '').toLowerCase(),
+      value: parseFloat(ent.state),
+      unit: ent.attributes?.unit_of_measurement ?? 'm',
+    }
+  }
+
+  const dirId = cfg.direction
+    || (pid && !pid.startsWith('proximity.') ? `${pid}${DIR_SUFFIX}` : null)
+    || findDirectionSensor(entities, cfg.key)
+  const distId = cfg.distance
+    || (dirId?.endsWith(DIR_SUFFIX) ? `${dirId.slice(0, -DIR_SUFFIX.length)}_distance` : null)
+
+  const dirEnt = dirId ? entities?.[dirId] : null
+  const distEnt = distId ? entities?.[distId] : null
+  if (!dirEnt && !distEnt) return null
+
+  return {
+    dir: String(dirEnt?.state ?? '').toLowerCase(),
+    value: distEnt ? parseFloat(distEnt.state) : NaN,
+    unit: distEnt?.attributes?.unit_of_measurement ?? 'm',
+  }
+}
+
+// Die Einheit haengt am HA-Einheitensystem – nicht auf Meter festnageln.
+const fmtDistance = (prox) => {
+  if (!prox || isNaN(prox.value)) return null
+  const { value, unit } = prox
+  if (unit === 'm') {
+    return value < 1000
+      ? `${Math.round(value)} m`
+      : `${(value / 1000).toFixed(value < 10000 ? 1 : 0).replace('.', ',')} km`
+  }
+  if (unit === 'km') {
+    return value < 1
+      ? `${Math.round(value * 1000)} m`
+      : `${value.toFixed(value < 10 ? 1 : 0).replace('.', ',')} km`
+  }
+  return `${value} ${unit}`.trim()
 }
 
 const fmtSince = (iso) => {
@@ -159,8 +212,8 @@ const fmtSince = (iso) => {
 export function resolvePerson(entities, cfg, now = Date.now()) {
   const state = st(entities, cfg.entity)
   const since = fmtSince(entities?.[cfg.entity]?.last_changed)
-  const prox = proximityInfo(entities, cfg.proximity)
-  const distance = fmtDistance(prox?.km)
+  const prox = proximityInfo(entities, cfg)
+  const distance = fmtDistance(prox)
   const out = (sector, label, detail, reason) => ({
     sector, label: label ?? sectorById(sector).label, detail: detail ?? since, reason, since,
   })
@@ -197,7 +250,7 @@ export function resolvePerson(entities, cfg, now = Date.now()) {
   }
 
   // 8. Auf dem Heimweg (proximity naehert sich)
-  if (prox?.dir === 'towards') {
+  if (prox?.dir === 'towards' || prox?.dir === 'arrived') {
     return out('homeward', null, distance ? `noch ${distance}` : since, 'proximity')
   }
 
