@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Life Constellation</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #03061a; }
+      #root { position: relative; width: 1080px; height: 1920px; }
+      #sky { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-no-timeline data-composition-id="main" data-start="0" data-duration="131.2" data-width="1080" data-height="1920">
+      <canvas id="sky" data-layout-allow-overflow width="1080" height="1920"></canvas>
+    </div>
+    <script src="cast.js"></script>
+    <script src="clock.js"></script>
+    <script src="sky.js"></script>
+  </body>
+</html>
